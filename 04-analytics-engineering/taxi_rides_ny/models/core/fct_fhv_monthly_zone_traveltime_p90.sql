@@ -1,68 +1,67 @@
 {{ config(materialized="table") }}
 
-WITH trip_durations AS (
-    SELECT
-        dispatching_base_num,
-        pickup_datetime,
-        dropoff_datetime,
-        pickup_location_id,
-        dropoff_location_id,
-        year,
-        month,
-        pickup_zone,
-        dropoff_zone,
-        TIMESTAMP_DIFF(dropoff_datetime, pickup_datetime, SECOND) AS trip_duration
-    FROM
-        {{ ref('dim_fhv_trips') }}
-),
-p90_trip_durations AS (
-    SELECT
-        year,
-        month,
-        pickup_location_id,
-        dropoff_location_id,
-        pickup_zone,
-        dropoff_zone,
-        APPROX_QUANTILES(trip_duration, 100)[OFFSET(90)] AS p90_trip_duration
-    FROM
-        trip_durations
-    GROUP BY
-        year, month, pickup_location_id, dropoff_location_id, pickup_zone, dropoff_zone
-),
-filtered_trips AS (
-    SELECT
-        p90.year,
-        p90.month,
-        p90.pickup_location_id,
-        p90.dropoff_location_id,
-        p90.pickup_zone,
-        p90.dropoff_zone,
-        p90.p90_trip_duration
-    FROM
-        p90_trip_durations p90
-    WHERE
-        p90.year = 2019
-        AND p90.month = 11
-        AND p90.pickup_zone IN ('Newark Airport', 'SoHo', 'Yorkville East')
-),
-ranked_trips AS (
-    SELECT
-        year,
-        month,
-        pickup_location_id,
-        pickup_zone,
-        dropoff_zone,
-        p90_trip_duration,
-        ROW_NUMBER() OVER (PARTITION BY pickup_zone ORDER BY p90_trip_duration DESC) AS rank
-    FROM
-        filtered_trips
-)
-SELECT
-    pickup_zone,
-    dropoff_zone,
-    p90_trip_duration
-FROM
-    ranked_trips
-WHERE
-    rank = 2
-ORDER BY pickup_zone
+with
+    trip_durations as (
+        select
+            dispatching_base_num,
+            pickup_datetime,
+            dropoff_datetime,
+            pickup_location_id,
+            dropoff_location_id,
+            year,
+            month,
+            pickup_zone,
+            dropoff_zone,
+            timestamp_diff(dropoff_datetime, pickup_datetime, second) as trip_duration
+        from {{ ref("dim_fhv_trips") }}
+    ),
+    p90_trip_durations as (
+        select
+            year,
+            month,
+            pickup_location_id,
+            dropoff_location_id,
+            pickup_zone,
+            dropoff_zone,
+            approx_quantiles(trip_duration, 100)[offset(90)] as p90_trip_duration
+        from trip_durations
+        group by
+            year,
+            month,
+            pickup_location_id,
+            dropoff_location_id,
+            pickup_zone,
+            dropoff_zone
+    ),
+    filtered_trips as (
+        select
+            p90.year,
+            p90.month,
+            p90.pickup_location_id,
+            p90.dropoff_location_id,
+            p90.pickup_zone,
+            p90.dropoff_zone,
+            p90.p90_trip_duration
+        from p90_trip_durations p90
+        where
+            p90.year = 2019
+            and p90.month = 11
+            and p90.pickup_zone in ('Newark Airport', 'SoHo', 'Yorkville East')
+    ),
+    ranked_trips as (
+        select
+            year,
+            month,
+            pickup_location_id,
+            pickup_zone,
+            dropoff_zone,
+            p90_trip_duration,
+            row_number() over (
+                partition by pickup_zone order by p90_trip_duration desc
+            ) as rank
+        from filtered_trips
+    )
+select pickup_zone, dropoff_zone, p90_trip_duration
+from ranked_trips
+where rank = 2
+order by pickup_zone
