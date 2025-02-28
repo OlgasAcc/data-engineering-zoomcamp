@@ -1,10 +1,6 @@
--- models/core/dim_fhv_trips.sql
-{{ config(materialized='table') }}
+{{ config(materialized="table") }}
 
--- models/core/dim_fhv_trips.sql
-{{ config(materialized='table') }}
-
-SELECT 
+select
     sft.dispatching_base_num,
     sft.pickup_datetime,
     sft.dropoff_datetime,
@@ -12,11 +8,12 @@ SELECT
     sft.dropoff_location_id,
     sft.year,
     sft.month,
-    dz1.zone AS pickup_zone,
-    dz2.zone AS dropoff_zone
-FROM `terraform-demo-452019.demo_dataset.staging_fhv_trips` sft
-LEFT JOIN `terraform-demo-452019.demo_dataset.dim_zones` dz1 
-    ON sft.pickup_location_id = dz1.locationid  -- Corrected column name
-LEFT JOIN `terraform-demo-452019.demo_dataset.dim_zones` dz2 
-    ON sft.dropoff_location_id = dz2.locationid  -- Corrected column name
-
+    dz1.zone as pickup_zone,
+    dz2.zone as dropoff_zone
+from `terraform-demo-452019.demo_dataset.staging_fhv_trips` sft
+left join
+    `terraform-demo-452019.demo_dataset.dim_zones` dz1
+    on sft.pickup_location_id = dz1.locationid
+left join
+    `terraform-demo-452019.demo_dataset.dim_zones` dz2
+    on sft.dropoff_location_id = dz2.locationid

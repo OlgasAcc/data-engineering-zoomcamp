@@ -1,15 +1,15 @@
-{{ config(materialized="view") }}
+{{ config(materialized="table") }}
 
--- models/staging/staging_fhv_trips.sql
-{{ config(materialized='table') }}
-
-SELECT 
+select
     dispatching_base_num,
     pickup_datetime,
     dropoff_datetime,
-    PULocationID AS pickup_location_id,  -- Rename column
-    DOLocationID AS dropoff_location_id, -- Rename column
-    EXTRACT(YEAR FROM pickup_datetime) AS year, 
-    EXTRACT(MONTH FROM pickup_datetime) AS month
-FROM `terraform-demo-452019.demo_dataset.fhv_tripdata`
-WHERE dispatching_base_num IS NOT NULL
+    cast(pulocationid as int64) as pickup_location_id,
+    cast(dolocationid as int64) as dropoff_location_id,
+    extract(year from pickup_datetime) as year,
+    extract(month from pickup_datetime) as month
+from `terraform-demo-452019.demo_dataset.fhv_tripdata`
+where
+    dispatching_base_num is not null
+    and pulocationid is not null
+    and dolocationid is not null
