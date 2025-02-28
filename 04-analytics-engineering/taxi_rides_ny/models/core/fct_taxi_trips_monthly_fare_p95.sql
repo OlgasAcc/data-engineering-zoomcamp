@@ -11,7 +11,7 @@ with
         where
             fare_amount > 0
             and trip_distance > 0
-            and payment_type_description in ('Cash', 'Credit Card')
+            and lower(payment_type_description) in ('cash', 'credit card')
             and extract(year from pickup_datetime) between 2010 and 2025
     ),
     ranked_fares as (
