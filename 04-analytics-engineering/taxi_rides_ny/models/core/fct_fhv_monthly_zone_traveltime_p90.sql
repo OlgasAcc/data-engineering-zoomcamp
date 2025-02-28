@@ -11,6 +11,8 @@ with
             year = 2019
             and month = 11
             and pickup_zone in ('Newark Airport', 'SoHo', 'Yorkville East')
+            and pickup_zone != 'Unknown'
+            and dropoff_zone != 'Unknown'
     ),
 
     p90_trip_durations as (
@@ -33,7 +35,7 @@ with
         from p90_trip_durations
     )
 
-select pickup_zone, dropoff_zone, p90_trip_duration
+select pickup_zone, dropoff_zone
 from ranked_trips
 where rank = 2
 order by pickup_zone
